@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muskaan — from columns to skylines</title>
+<meta name="description" content="Commerce graduate, MBA candidate. A ledger that grew into a skyline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=Caveat:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ================================================================
+     EDIT HER DETAILS HERE ↓ (also the SITE object in the script)
+     ================================================================ */
+  :root{
+    --paper:#E7EFDD;
+    --paper-deep:#DCE7D0;
+    --rule:#5E9C79;
+    --rule-soft:rgba(94,156,121,.32);
+    --ink:#22307E;
+    --ink-soft:rgba(34,48,126,.72);
+    --red:#C8323C;
+    --night:#0E1433;
+    --lamp:#F2E6BF;
+
+    --display:"Big Shoulders Display", "Arial Narrow", sans-serif;
+    --serif:"Spectral", Georgia, serif;
+    --hand:"Caveat", cursive;
+
+    --pad: clamp(20px, 5vw, 72px);
+  }
+  *{box-sizing:border-box}
+  html{background:var(--paper);-webkit-text-size-adjust:100%}
+  body{
+    margin:0; color:var(--ink); background:var(--paper);
+    font-family:var(--serif); font-size:clamp(17px,1.15vw + 10px,20px); line-height:1.6;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:color .6s ease;
+  }
+  ::selection{background:var(--red);color:var(--paper)}
+  a{color:inherit}
+  :focus-visible{outline:3px solid var(--red);outline-offset:4px;border-radius:2px}
+
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+  /* a whisper of paper grain over everything, keeps the WebGL from looking plasticky */
+  .grain{position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:.07;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
+  body[data-theme="night"] .grain{mix-blend-mode:screen;opacity:.05}
+
+  /* ---------- header ---------- */
+  .top{position:fixed;z-index:5;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:baseline;
+    padding:22px var(--pad) 34px;pointer-events:none;color:var(--ink);transition:color .6s ease;
+    background:linear-gradient(180deg,var(--bgc,#E7EFDD) 0%,var(--bgc-a,rgba(231,239,221,.7)) 55%,transparent 100%)}
+  body[data-theme="night"] .top{color:var(--paper)}
+  .mark{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.01em;text-decoration:none;pointer-events:auto}
+  .folio{font-family:var(--serif);font-style:italic;font-size:15px;opacity:.85;text-align:right}
+  .folio b{font-style:normal;font-weight:600}
+
+  /* ---------- story ---------- */
+  main{position:relative;z-index:2}
+  section{position:relative;min-height:100vh;padding:0 var(--pad)}
+  .h-display{font-family:var(--display);font-weight:900;line-height:.84;letter-spacing:-.005em;margin:0}
+
+  /* hero */
+  #opening{height:110vh;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:13vh}
+  #opening h1{font-size:clamp(68px,12.5vw,232px);max-width:11ch;color:var(--ink)}
+  #opening .sub{font-style:italic;font-size:clamp(20px,1.7vw + 8px,30px);margin:.6em 0 0;max-width:30ch;color:var(--ink)}
+  .cue{position:absolute;right:var(--pad);bottom:13vh;font-family:var(--hand);font-size:24px;display:flex;align-items:center;gap:12px;color:var(--ink-soft)}
+  .cue i{display:block;width:2px;height:54px;background:var(--ink-soft);transform-origin:top;animation:drip 2.4s cubic-bezier(.6,0,.2,1) infinite}
+  @keyframes drip{0%{transform:scaleY(0)}55%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}
+
+  /* chapter blocks */
+  .chapter{height:170vh}
+  .chapter .sheet{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;padding:84px 0 32px}
+  @media (max-height:820px) and (min-width:761px){
+    .chapter{height:auto;min-height:150vh;padding-bottom:30vh}
+    .chapter .sheet{position:relative}
+    #position{height:auto;padding-bottom:20vh}
+    #position .sheet{position:relative}
+  }
+  .copy{max-width:560px}
+  .copy h2{font-size:clamp(84px,11vw,200px)}
+  .copy .lede{font-size:clamp(19px,1.2vw + 10px,23px);margin:.9em 0 1.4em;max-width:34ch}
+
+  dl.entries{margin:0;border-top:2px solid currentColor}
+  dl.entries div{display:grid;grid-template-columns:minmax(150px,12em) 1fr;gap:0 18px;padding:9px 0 8px;border-bottom:1px solid var(--rule-soft)}
+  dl.entries dt{font-weight:600}
+  dl.entries dd{margin:0;font-style:italic;opacity:.86}
+
+  #bcom .copy{color:var(--ink)}
+  #bcom .copy-panel{background:rgba(231,239,221,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:34px 36px 30px;margin-left:-36px;border-left:4px double var(--red)}
+
+  #mba .sheet{justify-content:flex-end}
+  #mba .copy{color:var(--paper)}
+  #mba dl.entries div{border-bottom-color:rgba(231,239,221,.18)}
+  #mba .copy-panel{background:rgba(14,20,51,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:34px 36px 30px;border-left:4px double var(--red)}
+
+  /* transition line */
+  #forward{height:150vh}
+  #forward .sheet{position:sticky;top:0;height:100vh;display:flex;align-items:center;justify-content:center;text-align:center}
+  #forward .sheet::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 55% 45% at 50% 50%,rgba(14,20,51,.62),transparent 75%);pointer-events:none}
+  #forward p{position:relative;font-family:var(--display);font-weight:700;font-size:clamp(40px,5.4vw,96px);line-height:.98;margin:0;max-width:16ch;color:var(--paper);text-shadow:0 2px 30px rgba(14,20,51,.55)}
+  #forward small{display:block;font-family:var(--hand);font-weight:500;font-size:clamp(22px,1.6vw,30px);margin-top:22px;opacity:.85;color:var(--lamp);text-shadow:none}
+
+  /* ---------- the balance sheet ---------- */
+  #position{height:190vh}
+  #position .sheet{position:sticky;top:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:90px 0 40px}
+  .bs{position:relative;width:min(980px,100%);color:var(--ink);
+    background:
+      linear-gradient(90deg,transparent 54px,var(--red) 54px,var(--red) 55px,transparent 55px,transparent 58px,var(--red) 58px,var(--red) 59px,transparent 59px),
+      repeating-linear-gradient(180deg,transparent 0 37px,var(--rule-soft) 37px 38px),
+      var(--paper);
+    padding:46px 46px 40px 92px;
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.65), 0 2px 0 rgba(255,255,255,.4) inset;
+    transform:rotate(-.6deg);
+  }
+  .bs header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px}
+  .bs h2{font-family:var(--display);font-weight:900;font-size:clamp(44px,5.2vw,78px);line-height:.9;margin:0}
+  .bs header p{margin:0;font-style:italic;opacity:.8}
+  .bs .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 48px}
+  .bs h3{font-family:var(--display);font-weight:700;font-size:28px;margin:18px 0 4px;letter-spacing:.01em}
+  .bs table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums lining-nums}
+  .bs td{padding:5px 0 6px;vertical-align:baseline;line-height:1.35}
+  .bs td.n{text-align:right;white-space:nowrap;padding-left:16px;font-weight:600}
+  .bs tr.sub td{font-style:italic;opacity:.85}
+  .bs tr.sub td.n{border-top:1px solid var(--ink)}
+  .bs .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding-top:8px;border-top:1px solid var(--ink);font-family:var(--display);font-weight:700;font-size:26px}
+  .bs .total span:last-child{border-bottom:4px double var(--ink);padding-bottom:1px;font-variant-numeric:tabular-nums}
+  .neg{color:var(--red)}
+  .margin-note{margin:26px 0 -8px;font-family:var(--hand);font-size:27px;line-height:1.1;color:var(--ink-soft);transform:rotate(-1.5deg);transform-origin:left}
+
+  .stamp{position:absolute;right:30px;top:-30px;z-index:2;font-family:var(--display);font-weight:900;color:var(--red);
+    border:4px solid var(--red);outline:2px solid var(--red);outline-offset:4px;border-radius:6px;padding:6px 16px 4px;
+    font-size:48px;line-height:1;transform:rotate(-11deg);mix-blend-mode:multiply;opacity:0;
+    -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feComponentTransfer><feFuncA type='discrete' tableValues='1 1 1 0 1 1'/></feComponentTransfer></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+            mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feComponentTransfer><feFuncA type='discrete' tableValues='1 1 1 0 1 1'/></feComponentTransfer></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  }
+  .stamp small{display:block;font-family:var(--serif);font-weight:600;font-size:13px;text-align:center;margin-top:3px;letter-spacing:.02em}
+  .stamp.on{animation:thunk .42s cubic-bezier(.2,1.6,.4,1) forwards}
+  @keyframes thunk{0%{opacity:0;transform:rotate(-4deg) scale(1.9)}60%{opacity:.92}100%{opacity:.88;transform:rotate(-11deg) scale(1)}}
+
+  /* ---------- the end ---------- */
+  #brought::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(90deg,rgba(231,239,221,.92) 0%,rgba(231,239,221,.7) 38%,transparent 62%)}
+  #brought{min-height:120vh;display:flex;flex-direction:column;justify-content:center;padding-top:10vh;padding-bottom:6vh;color:var(--ink)}
+  #brought h2{font-size:clamp(76px,13vw,250px);max-width:9ch}
+  #brought .lede{font-size:clamp(19px,1.2vw + 10px,24px);max-width:36ch;margin:.9em 0 1.6em}
+  .links{display:flex;flex-wrap:wrap;gap:14px}
+  .btn{font-family:var(--display);font-weight:700;font-size:24px;text-decoration:none;padding:12px 22px 10px;border:2px solid var(--ink);
+    transition:background .25s,color .25s;display:inline-block}
+  .btn:hover{background:var(--ink);color:var(--paper)}
+  .btn.primary{background:var(--ink);color:var(--paper)}
+  .btn.primary:hover{background:var(--red);border-color:var(--red)}
+  footer{margin-top:auto;padding-top:14vh;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-style:italic;font-size:15px;opacity:.75;border-top:1px solid var(--rule);padding-bottom:4px}
+  footer p{margin:14px 0 0}
+
+  /* ---------- small screens ---------- */
+  @media (max-width:760px){
+    .top{padding-top:16px}
+    .folio{font-size:14px}
+    .folio b,.folio .of{display:none}
+    #brought::before{background:linear-gradient(180deg,rgba(231,239,221,.94) 0%,rgba(231,239,221,.8) 48%,transparent 72%)}
+    .cue{display:none}
+    #bcom .copy-panel,#mba .copy-panel{margin-left:0;padding:24px 20px 20px}
+    dl.entries div{grid-template-columns:1fr;gap:0}
+    .chapter{height:auto;min-height:100vh}
+    .chapter .sheet{position:relative;height:auto;min-height:100vh;padding:110px 0 60px;align-items:flex-end}
+    .bs{padding:30px 20px 26px 34px;transform:none;
+      background:linear-gradient(90deg,transparent 16px,var(--red) 16px,var(--red) 17px,transparent 17px,transparent 20px,var(--red) 20px,var(--red) 21px,transparent 21px),repeating-linear-gradient(180deg,transparent 0 37px,var(--rule-soft) 37px 38px),var(--paper)}
+    .bs .cols{grid-template-columns:1fr}
+    .stamp{right:14px;top:-22px;font-size:30px}
+    .margin-note{left:30px;font-size:22px}
+    #position{height:auto}
+    #position .sheet{position:relative;padding:110px 0 90px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .cue i{animation:none}
+    .stamp.on{animation:none;opacity:.88}
+    *{scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body data-theme="paper">
+<canvas id="scene" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="top">
+  <a class="mark" href="#opening" data-name>Muskaan</a>
+  <div class="folio" aria-live="polite"><b id="folio-n">Folio 1</b><span class="of"> of 6 · </span><span id="folio-t">Opening balance</span></div>
+</div>
+
+<main>
+  <!-- 1 -->
+  <section id="opening" data-chapter="Opening balance">
+    <h1 class="h-display">She made the numbers balance.</h1>
+    <p class="sub">Now she's learning what to build with them.</p>
+    <div class="cue" aria-hidden="true"><i></i>scroll to turn the page</div>
+  </section>
+
+  <!-- 2 -->
+  <section id="bcom" class="chapter" data-chapter="B.Com">
+    <div class="sheet">
+      <div class="copy copy-panel">
+        <h2 class="h-display">B.Com</h2>
+        <p class="lede">Three years of trial balances, tax slabs and audit trails. The unglamorous grammar of business, and she got fluent in it.</p>
+        <dl class="entries">
+          <div><dt>Financial Accounting</dt><dd>every rupee has to come from somewhere</dd></div>
+          <div><dt>Cost Accounting</dt><dd>what things really cost</dd></div>
+          <div><dt>Income Tax</dt><dd>patience, mostly</dd></div>
+          <div><dt>Auditing</dt><dd>check twice, trust the trail</dd></div>
+          <div><dt>Business Law</dt><dd>always read the fine print</dd></div>
+          <div><dt>Economics</dt><dd>why people do what they do with money</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="forward" data-chapter="Carried forward">
+    <div class="sheet">
+      <p>Every entry is a small fact. Stack enough of them and you can see the shape of a whole business.
+        <small>balance c/f to the next page</small></p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="mba" class="chapter" data-chapter="MBA">
+    <div class="sheet">
+      <div class="copy copy-panel">
+        <h2 class="h-display">MBA</h2>
+        <p class="lede">The questions got bigger. Not "does it balance?" but "where should the money go next, and who has to say yes?"</p>
+        <dl class="entries">
+          <div><dt>Corporate Finance</dt><dd>where the money should go next</dd></div>
+          <div><dt>Marketing</dt><dd>why people choose what they choose</dd></div>
+          <div><dt>Operations</dt><dd>how things actually get made and moved</dd></div>
+          <div><dt>Strategy</dt><dd>saying no to good ideas</dd></div>
+          <div><dt>Business Analytics</dt><dd>letting the data argue its case</dd></div>
+          <div><dt>Case competitions</dt><dd>thinking out loud, on a deadline</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="position" data-chapter="Statement of position">
+    <div class="sheet">
+      <article class="bs" aria-labelledby="bs-title">
+        <div class="stamp" id="stamp" aria-hidden="true">Balanced<small id="stamp-date">25 Nov 2026</small></div>
+        <header>
+          <h2 id="bs-title"><span data-name>Muskaan</span>, a balance sheet</h2>
+          <p>as at today, figures in ₹</p>
+        </header>
+        <div class="cols">
+          <div>
+            <h3>Assets</h3>
+            <table>
+              <tr><td>Reads a balance sheet in one sitting</td><td class="n">3,50,000</td></tr>
+              <tr><td>Excel without touching the mouse</td><td class="n">2,25,000</td></tr>
+              <tr><td>Case frameworks, memorised</td><td class="n">1,75,000</td></tr>
+              <tr><td>Presents to rooms that haven't had coffee</td><td class="n">1,50,000</td></tr>
+            </table>
+            <div class="total"><span>Total assets</span><span>9,00,000</span></div>
+          </div>
+          <div>
+            <h3>Liabilities</h3>
+            <table>
+              <tr><td>Highlighters, every colour</td><td class="n">40,000</td></tr>
+              <tr><td>"Just one more slide"</td><td class="n">85,000</td></tr>
+              <tr><td>Chai, daily, non-negotiable</td><td class="n">75,000</td></tr>
+              <tr class="sub"><td></td><td class="n">2,00,000</td></tr>
+            </table>
+            <h3>Equity</h3>
+            <table>
+              <tr><td>Curiosity, compounding since school</td><td class="n">4,50,000</td></tr>
+              <tr><td>Stubbornness, retained</td><td class="n">2,50,000</td></tr>
+              <tr class="sub"><td></td><td class="n">7,00,000</td></tr>
+            </table>
+            <div class="total"><span>Total liabilities &amp; equity</span><span>9,00,000</span></div>
+          </div>
+        </div>
+        <p class="margin-note">audited by her sibling. mostly accurate.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="brought" data-chapter="Brought forward">
+    <h2 class="h-display">The books are open.</h2>
+    <p class="lede">Internship, a firm, or something of her own. Whatever comes next starts on a fresh page, and she already knows how to keep it.</p>
+    <div class="links">
+      <a class="btn primary" id="email" href="mailto:hello@example.com">Email her</a>
+      <a class="btn" id="linkedin" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" id="resume" href="#" download>Download résumé</a>
+    </div>
+    <footer>
+      <p>B.Com, then MBA. Currently writing the next entry.</p>
+      <p>Made with love by her sibling, who still can't tell a debit from a credit.</p>
+    </footer>
+  </section>
+</main>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+<script type="module">
+/* ================================================================
+   HER DETAILS — change these and everything updates.
+   ================================================================ */
+const SITE = {
+  name:     "Muskaan",                       // her first name
+  email:    "hello@example.com",           // her email
+  linkedin: "https://www.linkedin.com/",   // her LinkedIn URL
+  resume:   ""                             // e.g. "resume.pdf" (put the file next to index.html). Empty hides the button.
+};
+
+document.querySelectorAll("[data-name]").forEach(el => el.textContent = SITE.name);
+document.title = `${SITE.name}, from columns to skylines`;
+document.getElementById("email").href = `mailto:${SITE.email}`;
+document.getElementById("linkedin").href = SITE.linkedin;
+const resumeBtn = document.getElementById("resume");
+if (SITE.resume) resumeBtn.href = SITE.resume; else resumeBtn.remove();
+document.getElementById("stamp-date").textContent =
+  new Date().toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const small = matchMedia("(max-width: 760px)").matches;
+
+/* ---------------- helpers ---------------- */
+const clamp = (x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const smooth = t=>t*t*(3-2*t);
+const easeOut = t=>1-Math.pow(1-t,3);
+function hexToRgb(h){const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
+function rampColor(stops, s){ // stops: [[s, "#hex"], ...]
+  if (s<=stops[0][0]) return hexToRgb(stops[0][1]);
+  for (let i=0;i<stops.length-1;i++){
+    const [s0,c0]=stops[i],[s1,c1]=stops[i+1];
+    if (s<=s1){const t=smooth((s-s0)/(s1-s0));const a=hexToRgb(c0),b=hexToRgb(c1);return a.map((v,k)=>lerp(v,b[k],t))}
+  }
+  return hexToRgb(stops[stops.length-1][1]);
+}
+function rampNum(stops, s){
+  if (s<=stops[0][0]) return stops[0][1];
+  for (let i=0;i<stops.length-1;i++){const[s0,v0]=stops[i],[s1,v1]=stops[i+1];if(s<=s1)return lerp(v0,v1,smooth((s-s0)/(s1-s0)))}
+  return stops[stops.length-1][1];
+}
+const rgbCss = c=>`rgb(${c.map(v=>Math.round(v*255)).join(",")})`;
+
+/* ---------------- scroll → story position "s" (0..5, one unit per chapter) ---------------- */
+const sections=[...document.querySelectorAll("main > section")];
+let anchors=[];
+function measure(){
+  const max=document.documentElement.scrollHeight-innerHeight;
+  anchors=sections.map((sec,i)=>{
+    if(i===0) return 0;
+    if(i===sections.length-1) return max;
+    // a chapter "arrives" when its top reaches the top of the viewport
+    return Math.min(max, sec.offsetTop + (sec.offsetHeight>innerHeight*1.2 ? innerHeight*.15 : 0));
+  });
+}
+function scrollToS(y){
+  for(let i=0;i<anchors.length-1;i++){
+    if(y<=anchors[i+1]) return i + clamp((y-anchors[i])/Math.max(1,anchors[i+1]-anchors[i]));
+  }
+  return anchors.length-1;
+}
+measure(); addEventListener("resize",measure);
+addEventListener("load",measure);
+document.fonts?.ready.then(measure);
+new ResizeObserver(measure).observe(document.querySelector("main"));
+
+const BG = [[0,"#E7EFDD"],[1,"#DDE8D1"],[1.55,"#8E9CB6"],[2,"#2A3166"],[2.6,"#121A45"],[3,"#0E1433"],[4,"#0A0F2A"],[4.45,"#20285A"],[4.8,"#B9BFCB"],[5,"#E7EFDD"]];
+const rootStyle=document.documentElement.style;
+function paintChrome(bg){
+  const css=rgbCss(bg);
+  rootStyle.background=document.body.style.background=css;
+  rootStyle.setProperty("--bgc",`rgba(${bg.map(v=>Math.round(v*255)).join(",")},.85)`);
+  rootStyle.setProperty("--bgc-a",`rgba(${bg.map(v=>Math.round(v*255)).join(",")},.5)`);
+}
+const folioN=document.getElementById("folio-n"), folioT=document.getElementById("folio-t");
+let lastChapter=-1, lastTheme="";
+function updateChrome(s){
+  const idx=clamp(Math.floor(s+0.35),0,5);
+  if(idx!==lastChapter){lastChapter=idx;folioN.textContent=`Folio ${idx+1}`;folioT.textContent=sections[idx].dataset.chapter}
+  const theme=(s>1.55&&s<4.7)?"night":"paper";
+  if(theme!==lastTheme){lastTheme=theme;document.body.dataset.theme=theme}
+}
+
+/* ---------------- the stamp ---------------- */
+const stamp=document.getElementById("stamp");
+new IntersectionObserver((es,ob)=>{es.forEach(e=>{if(e.isIntersecting){setTimeout(()=>stamp.classList.add("on"),reduced?0:650);ob.disconnect()}})},{threshold:.55})
+  .observe(document.querySelector(".bs"));
+
+/* ---------------- three.js scene ---------------- */
+let THREE=null;
+try{ THREE = await import("three"); }catch(e){ console.warn("3D unavailable, running flat", e); }
+
+const canvas=document.getElementById("scene");
+let renderer=null;
+if(THREE){ try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"}); }catch(e){ renderer=null; } }
+
+if(!renderer){
+  canvas.remove();
+  // flat fallback: the colour story still plays
+  const loop=()=>{const s=scrollToS(scrollY);paintChrome(rampColor(BG,s));updateChrome(s);requestAnimationFrame(loop)};loop();
+}else{
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setSize(innerWidth,innerHeight,false);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.05;
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled=!small;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color("#E7EFDD");
+  scene.fog=new THREE.Fog("#E7EFDD",70,170);
+  const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,0.1,400);
+
+  /* --- the ledger page --- */
+  const N=28, CELL=2, HALF=N*CELL/2;
+  await Promise.race([document.fonts.load("500 48px Caveat"), new Promise(r=>setTimeout(r,1500))]);
+  function ledgerTexture(){
+    const S=2048,c=document.createElement("canvas");c.width=c.height=S;const g=c.getContext("2d");
+    const cs=S/N;
+    g.fillStyle="#EEF4E6";g.fillRect(0,0,S,S);
+    // faint pulp variation
+    for(let i=0;i<1400;i++){g.fillStyle=`rgba(94,156,121,${Math.random()*.035})`;g.fillRect(Math.random()*S,Math.random()*S,Math.random()*40,Math.random()*3)}
+    // horizontal ruling, two lines per cell
+    for(let i=0;i<=N*2;i++){g.strokeStyle=i%2?"rgba(94,156,121,.22)":"rgba(94,156,121,.5)";g.lineWidth=i%2?1.5:2.5;g.beginPath();g.moveTo(0,i*cs/2);g.lineTo(S,i*cs/2);g.stroke()}
+    // column rules
+    for(let i=0;i<=N;i++){g.strokeStyle="rgba(94,156,121,.38)";g.lineWidth=2;g.beginPath();g.moveTo(i*cs,0);g.lineTo(i*cs,S);g.stroke()}
+    // red double margins
+    [4,16].forEach(col=>{g.strokeStyle="rgba(200,50,60,.75)";g.lineWidth=3;[ -5, 5].forEach(o=>{g.beginPath();g.moveTo(col*cs+o,0);g.lineTo(col*cs+o,S);g.stroke()})});
+    // entries in fountain-pen ink
+    const parts=["To Balance b/d","By Sales","To Rent","By Bank","To Wages","By Capital","To Purchases","By Interest","To Cash","By Commission","To Drawings","By Debtors"];
+    const fmt=n=>n.toLocaleString("en-IN");
+    g.textBaseline="alphabetic";
+    for(let r=0;r<N*2;r++){
+      if(Math.random()<.42) continue;
+      const y=(r+1)*cs/2-8, jitter=()=>(Math.random()-.5)*4;
+      g.fillStyle=`rgba(34,48,126,${.55+Math.random()*.3})`;
+      g.font=`500 ${38+Math.random()*6}px Caveat`;
+      g.textAlign="left";
+      g.save();g.translate(4*cs+18,y+jitter());g.rotate((Math.random()-.5)*.02);g.fillText(parts[(Math.random()*parts.length)|0],0,0);g.restore();
+      g.textAlign="right";
+      const amt=fmt(Math.round(Math.random()*90000+1200));
+      const isRed=Math.random()<.06;
+      if(isRed) g.fillStyle="rgba(200,50,60,.8)";
+      g.fillText(amt,(Math.random()<.5?12:15)*cs-14,y+jitter());
+      if(Math.random()<.5){g.fillStyle=`rgba(34,48,126,${.5+Math.random()*.3})`;g.fillText(fmt(Math.round(Math.random()*240000+5000)),(Math.random()<.5?22:26)*cs-14,y+jitter())}
+    }
+    const t=new THREE.CanvasTexture(c);
+    t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);
+    t.anisotropy=renderer.capabilities.getMaxAnisotropy();
+    return t;
+  }
+  const paperMat=new THREE.MeshStandardMaterial({map:ledgerTexture(),roughness:.95,metalness:0});
+  const paper=new THREE.Mesh(new THREE.PlaneGeometry(N*CELL*3,N*CELL*3),paperMat);
+  paper.rotation.x=-Math.PI/2;paper.receiveShadow=true;scene.add(paper);
+
+  /* --- the bars that rise out of it --- */
+  const bars=[];
+  const rand=(()=>{let a=20241004;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}})();
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+    if(i%5===2||j%5===2) continue;              // avenues
+    const x=-HALF+CELL*(i+.5), z=-HALF+CELL*(j+.5);
+    const dc=Math.hypot(x+4,z+6);
+    const edge=smooth(clamp((HALF-Math.max(Math.abs(x),Math.abs(z)))/12));
+    const trend=(HALF-z)/(2*HALF);                // taller toward the back: growth
+    const r=rand();
+    let h=(1.2+17*Math.exp(-dc*dc/170)+7*Math.pow(r,3)+4*trend)*(.35+.65*edge);
+    if(rand()<.04) h*=1.6;
+    const delay=dc/HALF*.55+rand()*.25;
+    const kind=rand();
+    bars.push({x,z,h,delay,kind});
+  }
+  const geo=new THREE.BoxGeometry(1,1,1);geo.translate(0,.5,0);
+  const barMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.55,metalness:.1});
+  const uniforms={uNight:{value:0},uWin:{value:new THREE.Color("#F2E6BF")}};
+  barMat.onBeforeCompile=(sh)=>{
+    Object.assign(sh.uniforms,uniforms);
+    sh.vertexShader=sh.vertexShader
+      .replace("#include <common>","#include <common>\nvarying vec3 vWP; varying float vLY; varying float vUp;")
+      .replace("#include <begin_vertex>","#include <begin_vertex>\nvLY=position.y; vUp=abs(normal.y);\nvec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWP=(modelMatrix*wpp).xyz;");
+    sh.fragmentShader=sh.fragmentShader
+      .replace("#include <common>","#include <common>\nuniform float uNight; uniform vec3 uWin; varying vec3 vWP; varying float vLY; varying float vUp;")
+      .replace("#include <color_fragment>","#include <color_fragment>\ndiffuseColor.rgb*=mix(.55,1.18,vLY);")
+      .replace("#include <emissivemap_fragment>",`#include <emissivemap_fragment>
+        float u=(vWP.x+vWP.z)*3.4; float fl=floor(vWP.y*2.6);
+        float hsh=fract(sin(dot(vec2(floor(u),fl),vec2(12.9898,78.233)))*43758.5453);
+        float blk=fract(sin(dot(vec2(floor(u*.25),floor(fl*.34)),vec2(39.34,11.13)))*24634.63);
+        float lit=step(.62,hsh)*step(.45,blk)*step(.38,fract(u))*step(.5,fract(vWP.y*2.6))*(1.0-step(.5,vUp))*step(.4,vWP.y);
+        totalEmissiveRadiance+=uWin*lit*uNight*(.35+.9*hsh*hsh);
+        totalEmissiveRadiance+=vec3(.06,.09,.25)*uNight*(1.0-vUp)*.25;`);
+  };
+  const mesh=new THREE.InstancedMesh(geo,barMat,bars.length);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  const ink=new THREE.Color("#22307E"), rule=new THREE.Color("#4F7F64"), red=new THREE.Color("#A63A44"), tmp=new THREE.Color();
+  bars.forEach((b,k)=>{
+    if(b.kind<.02) tmp.copy(red);
+    else if(b.kind<.075) tmp.copy(rule);
+    else tmp.copy(ink).offsetHSL((rand()-.5)*.02,0,(rand()-.5)*.08);
+    mesh.setColorAt(k,tmp);
+  });
+  scene.add(mesh);
+  const M=new THREE.Matrix4(), P=new THREE.Vector3(), Q=new THREE.Quaternion(), Sc=new THREE.Vector3();
+  let lastRise=-1;
+  function updateBars(s){
+    const key=Math.round(s*400);
+    if(key===lastRise) return; lastRise=key;
+    bars.forEach((b,k)=>{
+      const t=easeOut(clamp((s-0.82-b.delay)/0.95));
+      const y=Math.max(1e-4,b.h*t);
+      P.set(b.x,0,b.z);Sc.set(1.48*(t>0?1:0.0001),y,1.48*(t>0?1:0.0001));
+      M.compose(P,Q,Sc);mesh.setMatrixAt(k,M);
+    });
+    mesh.instanceMatrix.needsUpdate=true;
+  }
+
+  /* --- the trend line, in red ink --- */
+  const curve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-27,2.5,24),new THREE.Vector3(-17,6,14),new THREE.Vector3(-10,4.8,7),
+    new THREE.Vector3(-2,11,-1),new THREE.Vector3(6,9.5,-7),new THREE.Vector3(13,16,-13),
+    new THREE.Vector3(19,14.5,-18),new THREE.Vector3(27,25,-26)],false,"centripetal");
+  const tube=new THREE.TubeGeometry(curve,320,.16,10,false);
+  const tubeMat=new THREE.MeshBasicMaterial({color:new THREE.Color("#E2414B"),toneMapped:false});
+  const line=new THREE.Mesh(tube,tubeMat);scene.add(line);
+  const tipGeo=new THREE.SphereGeometry(.42,20,16);
+  const tip=new THREE.Mesh(tipGeo,new THREE.MeshBasicMaterial({color:"#FFD9C9",toneMapped:false}));scene.add(tip);
+  const tipLight=new THREE.PointLight("#E2414B",0,22,1.6);scene.add(tipLight);
+  const idxCount=tube.index.count;
+
+  /* --- light --- */
+  const hemi=new THREE.HemisphereLight("#F4F8EE","#6E8A78",1.6);scene.add(hemi);
+  const sun=new THREE.DirectionalLight("#FFF6E6",2.2);
+  sun.position.set(-30,50,24);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  Object.assign(sun.shadow.camera,{left:-42,right:42,top:42,bottom:-42,near:1,far:140});sun.shadow.bias=-.0006;sun.shadow.normalBias=.02;
+  scene.add(sun);
+
+  /* --- camera path, one keyframe per chapter --- */
+  const camPts=[ [0,46,.01],[-12,30,24],[27,15,31],[7,4.2,21],[7,7,-25],[-64,84,104] ].map(a=>new THREE.Vector3(...a));
+  const lookPts=[ [0,0,0],[-1,0,3],[0,5,-3],[6.2,6.5,-14],[-8,6,-4],[-28,6,0] ].map(a=>new THREE.Vector3(...a));
+  const camCurve=new THREE.CatmullRomCurve3(camPts,false,"centripetal");
+  const lookCurve=new THREE.CatmullRomCurve3(lookPts,false,"centripetal");
+  // hero framing differs on phones: a little higher so the page fills the screen
+  if(small){camPts[0].y=58;camPts[5].set(-6,150,150);lookPts[5].set(0,-14,-10)}
+
+  const camPos=new THREE.Vector3(), look=new THREE.Vector3();
+  const pointer={x:0,y:0,tx:0,ty:0};
+  if(!reduced&&!small) addEventListener("pointermove",e=>{pointer.tx=e.clientX/innerWidth-.5;pointer.ty=e.clientY/innerHeight-.5});
+
+  let s=scrollToS(scrollY), last=performance.now();
+  // adaptive quality: if the GPU struggles (integrated graphics), drop shadows and resolution once
+  let perfN=0, perfT=0, downgraded=false;
+  function frame(now){
+    const rawDt=(now-last)/1000;
+    const dt=Math.min(.05,rawDt);last=now;
+    if(!downgraded && document.visibilityState==="visible" && rawDt<0.5){
+      perfN++; perfT+=rawDt;
+      if(perfN===90){
+        if(perfT/perfN>1/40){
+          downgraded=true;
+          renderer.setPixelRatio(1);renderer.setSize(innerWidth,innerHeight,false);
+          renderer.shadowMap.enabled=false;sun.castShadow=false;
+          barMat.needsUpdate=true;paperMat.needsUpdate=true;
+        }
+        perfN=0;perfT=0;
+      }
+    }
+    const target=scrollToS(scrollY);
+    s = reduced ? target : lerp(s,target,1-Math.exp(-dt*5.5));
+    if(Math.abs(s-target)<1e-4) s=target;
+    pointer.x=lerp(pointer.x,pointer.tx,1-Math.exp(-dt*3));pointer.y=lerp(pointer.y,pointer.ty,1-Math.exp(-dt*3));
+
+    const u=clamp(s/5);
+    camCurve.getPoint(u,camPos);lookCurve.getPoint(u,look);
+    // never dip into the paper
+    camPos.y=Math.max(2.6,camPos.y);
+    const par=lerp(.4,1,clamp(s));
+    camera.position.set(camPos.x+pointer.x*2.2*par,camPos.y-pointer.y*1.4*par,camPos.z);
+    camera.lookAt(look);
+    // a slight roll as we bank down the avenue: cinematic, not seasick
+    camera.rotateZ(Math.sin(clamp((s-2.4)/1.8)*Math.PI)*.045);
+    camera.fov=rampNum([[0,38],[1,40],[2,44],[3,56],[4,50],[5,40]],s);
+    camera.updateProjectionMatrix();
+
+    const bg=rampColor(BG,s);
+    scene.background.setRGB(...bg);scene.fog.color.setRGB(...bg);
+    paintChrome(bg);
+
+    const night=smooth(clamp((s-1.8)/1.0))*(1-smooth(clamp((s-4.35)/.55)));
+    uniforms.uNight.value=night;
+    hemi.intensity=lerp(1.6,.18,night);
+    hemi.color.setRGB(...rampColor([[0,"#F4F8EE"],[2,"#9AA7D6"],[3,"#4C5BA8"],[5,"#FFF1E2"]],s));
+    hemi.groundColor.setRGB(...rampColor([[0,"#6E8A78"],[3,"#0A0F2A"],[5,"#8FA38F"]],s));
+    sun.intensity=lerp(2.2,.35,night);
+    sun.color.setRGB(...rampColor([[0,"#FFF6E6"],[1.8,"#FFB89A"],[3,"#8A9BFF"],[4.6,"#FFC8A8"],[5,"#FFF3E2"]],s));
+    sun.position.set(lerp(-30,34,clamp(s/5)),lerp(50,26,night),24);
+    paperMat.color.setRGB(...rampColor([[0,"#FFFFFF"],[2,"#9DA6C8"],[3,"#3A4270"],[4.4,"#3A4270"],[5,"#FFFFFF"]],s));
+    renderer.toneMappingExposure=lerp(1.05,1.25,night);
+    const endPull=smooth(clamp(s-4));
+    scene.fog.near=lerp(70,22,night)+70*endPull;scene.fog.far=lerp(170,120,night)+140*endPull;
+
+    updateBars(s);
+
+    const draw=smooth(clamp((s-2.15)/1.5));
+    tube.setDrawRange(0,Math.floor(idxCount*draw/3)*3);
+    curve.getPoint(Math.max(.001,draw),tip.position);
+    tip.visible=draw>0.002&&draw<.999||(draw>=.999&&s<4.6);
+    tip.scale.setScalar(1+Math.sin(now/260)*(reduced?0:.12));
+    tipLight.position.copy(tip.position);tipLight.intensity=tip.visible?18*night:0;
+    line.visible=draw>0;
+
+    updateChrome(s);
+    renderer.render(scene,camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  addEventListener("resize",()=>{
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight,false);
+  });
+}
+</script>
+</body>
+</html>
